@@ -1,0 +1,1 @@
+To use the plugin, you need to append its path to the FLUX_CLI_PLUGINPATH environment variable.
