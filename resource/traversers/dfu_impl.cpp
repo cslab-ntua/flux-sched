@@ -1201,6 +1201,25 @@ void dfu_impl_t::set_match_cb (std::shared_ptr<dfu_match_cb_t> m)
     m_match = m;
 }
 
+void dfu_impl_t::set_task_labels (const std::vector<Task> &tasks, const System &sys)
+{
+    m_task_labels.clear ();
+    m_durations.clear ();
+    for (auto task : tasks) {
+        m_task_labels.insert (task.slot);
+
+        auto it = sys.optional.find ("durations");
+        if (it != sys.optional.end ()) {
+            const auto &durations = it->second;
+            for (const auto &duration : durations[task.slot]) {
+                m_durations[task.slot].push_back (
+                    static_cast<int64_t> (duration.as<double> ())
+                );
+            }
+        }
+    }
+}
+
 void dfu_impl_t::clear_err_message ()
 {
     m_err_msg = "";

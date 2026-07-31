@@ -126,6 +126,7 @@ class dfu_impl_t {
 
     void set_graph_db (std::shared_ptr<resource_graph_db_t> db);
     void set_match_cb (std::shared_ptr<dfu_match_cb_t> m);
+    void set_task_labels (const std::vector<Jobspec::Task> &tasks, const Jobspec::System &sys);
     void clear_err_message ();
     void reset_color ();
     int reset_exclusive_resource_types (const std::set<resource_type_t> &x_types);
@@ -676,6 +677,8 @@ class dfu_impl_t {
     resource_graph_t *m_graph = nullptr;
     std::shared_ptr<resource_graph_db_t> m_graph_db = nullptr;
     std::shared_ptr<dfu_match_cb_t> m_match = nullptr;
+    std::unordered_set<std::string> m_task_labels;
+    std::unordered_map<std::string, std::vector<int64_t>> m_durations;
     expr_eval_api_t m_expr_eval;
     std::string m_err_msg = "";
 };  // the end of class dfu_impl_t
