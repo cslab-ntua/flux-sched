@@ -1624,9 +1624,11 @@ static int init_resource_graph (std::shared_ptr<resource_ctx_t> &ctx)
         return rc;
     }
 
-    // Create a writers object for matched vertices and edges.
-    if (!(ctx->writers = match_writers_factory_t::create (
-              match_writers_factory_t::get_writers_type (*match_format)))) {
+    // Create a writers object for matched vertices and edges
+    match_format_t format =
+        match_writers_factory_t::get_writers_type (ctx->opts.get_opt ().get_match_format ());
+    int emit_nslots = ctx->opts.get_opt ().get_emit_nslots ();
+    if (!(ctx->writers = match_writers_factory_t::create (format, emit_nslots))) {
         flux_log (ctx->h,
                   LOG_ERR,
                   "%s: error creating match writer with: %s",

@@ -33,7 +33,7 @@ class dfu_flexible_largest_fit_t : public dfu_flexible_t {
         std::string task_label;
         std::size_t duration_offs;
     };
-    
+
     std::vector <variant_index_t> extract_variant_indices (
         const std::vector<std::vector<Jobspec::Resource>> &resources) const;
 

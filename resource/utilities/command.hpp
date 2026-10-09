@@ -32,6 +32,7 @@ struct test_params_t {
     std::string matcher_name;     /* Matcher name */
     std::string matcher_policy;   /* Matcher policy name */
     std::string traverser_policy; /* Traverser policy name */
+    int emit_nslots;
     std::string o_fname;          /* Output file to dump the filtered graph */
     std::ofstream r_out;          /* Output file stream for emitted R */
     std::string r_fname;          /* Output file to dump the emitted R */
