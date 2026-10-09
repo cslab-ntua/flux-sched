@@ -208,6 +208,21 @@ uint64_t relation_infra_t::get_weight () const
     return m_weight;
 }
 
+relation_infra_t::slot_role_t relation_infra_t::get_slot_role () const
+{
+    return m_slot_role;
+}
+
+void relation_infra_t::set_slot_role (relation_infra_t::slot_role_t slot_role)
+{
+    m_slot_role = slot_role;
+}
+
+bool relation_infra_t::is_slot_leader ()
+{
+    return m_slot_role == relation_infra_t::slot_role_t::LEADER;
+}
+
 void relation_infra_t::set_weight (uint64_t weight)
 {
     m_weight = weight;

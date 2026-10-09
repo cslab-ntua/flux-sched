@@ -47,6 +47,7 @@ struct jobmeta_t {
     int64_t now = -1;
     int64_t duration = SYSTEM_DEFAULT_DURATION;  // will need config ultimately
     std::shared_ptr<Jobspec::Constraint> constraint;
+    double parallelism = 0.0;
 
     bool is_queue_set () const
     {
@@ -94,6 +95,9 @@ struct jobmeta_t {
             m_queue_set = true;
         }
         constraint = jobspec.attributes.system.constraint;
+        auto it = jobspec.attributes.system.optional.find ("parallelism");
+        if (it != jobspec.attributes.system.optional.end ())
+            parallelism = it->second.as<double> ();
         return 0;
     }
 
@@ -126,6 +130,7 @@ class dfu_impl_t {
 
     void set_graph_db (std::shared_ptr<resource_graph_db_t> db);
     void set_match_cb (std::shared_ptr<dfu_match_cb_t> m);
+    void set_task_labels (const std::vector<Jobspec::Task> &tasks);
     void set_task_labels (const std::vector<Jobspec::Task> &tasks, const Jobspec::System &sys);
     void clear_err_message ();
     void reset_color ();
@@ -416,7 +421,8 @@ class dfu_impl_t {
         const std::vector<Jobspec::Resource> &resources,
         bool &pristine,
         unsigned int &nslots,
-        match_kind_t &ko);
+        match_kind_t &ko,
+        std::string &label);
     bool is_pconstraint_matched (vtx_t u, const std::string &property);
 
     /*! Accumulate count into accum if type matches with one of the resource
@@ -522,6 +528,7 @@ class dfu_impl_t {
                           unsigned int nslots,
                           bool pristine,
                           bool *excl,
+                          const std::string &label,
                           scoring_api_t &dfu);
     int dom_exp (const jobmeta_t &meta,
                  vtx_t u,
@@ -636,6 +643,7 @@ class dfu_impl_t {
                  const jobmeta_t &jobmeta,
                  bool full,
                  std::map<resource_type_t, int64_t> &to_parent,
+                 int64_t &nslots,
                  bool emit_shadow,
                  bool excl_parent);
     bool rem_tag (vtx_t u, int64_t jobid);
