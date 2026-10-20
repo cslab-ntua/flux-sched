@@ -1735,7 +1735,7 @@ int run_find (std::shared_ptr<resource_ctx_t> &ctx,
     std::shared_ptr<match_writers_t> w = nullptr;
 
     match_format_t format = match_writers_factory_t::get_writers_type (format_str);
-    int emit_nslots = ctx->opts.get_opt ().get_emit_nslots ();
+    int emit_nslots = ctx->opts.get_opt ().get_emit_nslots ().value_or (-1);
     if (!(w = match_writers_factory_t::create (format, emit_nslots)))
         goto error;
     if ((rc = ctx->traverser->find (w, criteria)) < 0) {

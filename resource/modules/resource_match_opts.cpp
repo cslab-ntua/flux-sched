@@ -84,7 +84,7 @@ const std::optional<std::string> &resource_opts_t::get_match_format () const
     return m_match_format;
 }
 
-const std::optional<int> get_emit_nslots () const
+const std::optional<int> &resource_opts_t::get_emit_nslots () const
 {
     return m_emit_nslots;
 }

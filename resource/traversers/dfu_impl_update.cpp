@@ -348,9 +348,7 @@ int dfu_impl_t::upd_dfv (vtx_t u,
             if (stop_explore_best (*ei, mod))
                 continue;
 
-            vtx_t tgt = target (*ei, *m_graph);
-            if ((*m_graph)[*ei].idata.get_slot_role () != relation_infra_t::slot_role_t::NONE)
-                (*m_graph)[*ei].idata.set_slot_role (relation_infra_t::slot_role_t::NONE);
+            vtx_t tgt = target (*ei, *m_graph);    
             int n_plan_sub = 0;
             bool x = get_eff_exclusive ((*m_graph)[*ei].idata.get_exclusive (), mod);
             unsigned needs =
@@ -378,6 +376,8 @@ int dfu_impl_t::upd_dfv (vtx_t u,
                 }
                 n_plans += n_plan_sub;
             }
+
+            (*m_graph)[*ei].idata.set_slot_role (relation_infra_t::slot_role_t::NONE);
         }
     }
     (*m_graph)[u].idata.colors[dom] = m_color.black ();
