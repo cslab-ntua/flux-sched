@@ -9,6 +9,7 @@
 \*****************************************************************************/
 
 #include "resource_match.hpp"
+#include <cmath>
 
 MOD_NAME ("sched-fluxion-resource");
 
@@ -191,6 +192,72 @@ static int process_args (std::shared_ptr<resource_ctx_t> &ctx, int argc, char **
     return rc;
 }
 
+static int parse_argilos_config(
+    flux_t *h,
+    json_t *table,
+    argilos_options_t &options)
+{
+    if (!json_is_object (table)) {
+        flux_log (h,
+                  LOG_ERR,
+                  "sched-fluxion-resource.argilos must be a table");
+        errno = EINVAL;
+        return -1;
+    }
+
+    argilos_options_t parsed;
+
+    const std::map<std::string, double argilos_options_t::*> fields {
+        {"b", &argilos_options_t::b},
+        {"beta", &argilos_options_t::beta},
+        {"k", &argilos_options_t::k},
+        {"load_breakpoint", &argilos_options_t::load_breakpoint},
+        {"delta", &argilos_options_t::delta},
+        {"gamma", &argilos_options_t::gamma},
+    };
+
+    const char *key = nullptr;
+    json_t *value = nullptr;
+
+    json_object_foreach (table, key, value) {
+        const auto field = fields.find (key);
+
+        if (field == fields.end ()) {
+            flux_log (h,
+                      LOG_ERR,
+                      "Unknown Argilos parameter: %s",
+                      key);
+            errno = EINVAL;
+            return -1;
+        }
+
+        if (!json_is_number (value)) {
+            flux_log (h,
+                      LOG_ERR,
+                      "Argilos parameter %s must be numeric",
+                      key);
+            errno = EINVAL;
+            return -1;
+        }
+
+        const double number = json_number_value (value);
+
+        if (!std::isfinite (number)) {
+            flux_log (h,
+                      LOG_ERR,
+                      "Argilos parameter %s must be finite",
+                      key);
+            errno = EINVAL;
+            return -1;
+        }
+
+        parsed.*(field->second) = number;
+    }
+
+    options = parsed;
+    return 0;
+}
+
 static int process_config_file (std::shared_ptr<resource_ctx_t> &ctx)
 {
     int rc = 0;
@@ -212,6 +279,25 @@ static int process_config_file (std::shared_ptr<resource_ctx_t> &ctx)
     optmgr_kv_t<resource_opts_t> opts_store;
     std::string info_str = "";
     json_object_foreach (conf, k, v) {
+        if (std::string (k) == "argilos") {
+            if (parse_argilos_config (ctx->h, v, ctx->argilos_options) < 0)
+                return -1;
+
+            const auto &o = ctx->argilos_options;
+            flux_log (ctx->h,
+                    LOG_INFO,
+                    "Argilos config: b=%g beta=%g k=%g "
+                    "load_breakpoint=%g delta=%g gamma=%g",
+                    o.b,
+                    o.beta,
+                    o.k,
+                    o.load_breakpoint,
+                    o.delta,
+                    o.gamma);
+
+            continue;
+        }
+
         std::string value;
         if (!(tmp = json_dumps (v, JSON_ENCODE_ANY | JSON_COMPACT))) {
             errno = ENOMEM;
@@ -1567,7 +1653,9 @@ static int init_resource_graph (std::shared_ptr<resource_ctx_t> &ctx)
 
     // Select the appropriate traverser based on CLI policy.
     ctx->traverser =
-        std::make_shared<dfu_traverser_t> (ctx->opts.get_opt ().get_traverser_policy ());
+        std::make_shared<dfu_traverser_t> (
+            ctx->opts.get_opt ().get_traverser_policy (),
+            ctx->argilos_options);
 
     // Select the appropriate matcher based on CLI policy.
     if (!(ctx->matcher = create_match_cb (ctx->opts.get_opt ().get_match_policy ()))) {

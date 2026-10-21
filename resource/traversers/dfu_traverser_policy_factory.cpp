@@ -30,7 +30,9 @@ bool known_traverser_policy (const std::string &policy)
     return rc;
 }
 
-std::shared_ptr<dfu_impl_t> create_traverser (const std::string &policy)
+std::shared_ptr<dfu_impl_t> create_traverser (
+    const std::string &policy,
+    const argilos_options_t &argilos_options)
 {
     std::shared_ptr<dfu_impl_t> traverser = nullptr;
     try {
@@ -41,7 +43,7 @@ std::shared_ptr<dfu_impl_t> create_traverser (const std::string &policy)
         } else if (policy == FLEXIBLE_LARGEST_FIT) {
             traverser = std::make_shared<dfu_flexible_largest_fit_t> ();
         } else if (policy == FLEXIBLE_ARGILOS) {
-            traverser = std::make_shared<dfu_flexible_argilos_t> ();
+            traverser = std::make_shared<dfu_flexible_argilos_t> (argilos_options);
         }
     } catch (std::bad_alloc &e) {
         errno = ENOMEM;
@@ -51,9 +53,11 @@ std::shared_ptr<dfu_impl_t> create_traverser (const std::string &policy)
     return traverser;
 }
 
-std::shared_ptr<dfu_impl_t> create_traverser (std::shared_ptr<resource_graph_db_t> db,
-                                              std::shared_ptr<dfu_match_cb_t> m,
-                                              const std::string &policy)
+std::shared_ptr<dfu_impl_t> create_traverser (
+    std::shared_ptr<resource_graph_db_t> db,
+    std::shared_ptr<dfu_match_cb_t> m,
+    const std::string &policy,
+    const argilos_options_t &argilos_options)
 {
     std::shared_ptr<dfu_impl_t> traverser = nullptr;
     try {
@@ -64,7 +68,7 @@ std::shared_ptr<dfu_impl_t> create_traverser (std::shared_ptr<resource_graph_db_
         } else if (policy == FLEXIBLE_LARGEST_FIT) {
             traverser = std::make_shared<dfu_flexible_largest_fit_t> (db, m);
         } else if (policy == FLEXIBLE_ARGILOS) {
-            traverser = std::make_shared<dfu_flexible_argilos_t> (db, m);
+            traverser = std::make_shared<dfu_flexible_argilos_t> (db, m, argilos_options);
         }
     } catch (std::bad_alloc &e) {
         errno = ENOMEM;

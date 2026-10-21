@@ -23,12 +23,21 @@ using namespace Flux::Jobspec;
 using namespace Flux::resource_model;
 using namespace Flux::resource_model::detail;
 
-dfu_flexible_argilos_t::dfu_flexible_argilos_t () = default;
-dfu_flexible_argilos_t::dfu_flexible_argilos_t (std::shared_ptr<resource_graph_db_t> db,
-                                std::shared_ptr<dfu_match_cb_t> m)
-    : dfu_flexible_t (db, m)
+dfu_flexible_argilos_t::dfu_flexible_argilos_t (
+    const argilos_options_t &options)
+    : m_options (options)
 {
 }
+
+dfu_flexible_argilos_t::dfu_flexible_argilos_t (
+    std::shared_ptr<resource_graph_db_t> db,
+    std::shared_ptr<dfu_match_cb_t> m,
+    const argilos_options_t &options)
+    : dfu_flexible_t (db, m),
+      m_options (options)
+{
+}
+
 dfu_flexible_argilos_t::dfu_flexible_argilos_t (const dfu_flexible_argilos_t &o) = default;
 dfu_flexible_argilos_t &dfu_flexible_argilos_t::operator= (const dfu_flexible_argilos_t &o) = default;
 dfu_flexible_argilos_t::dfu_flexible_argilos_t (dfu_flexible_argilos_t &&o) = default;
@@ -105,11 +114,11 @@ int dfu_flexible_argilos_t::effective_task_count (double parallelism,
     int cluster_size = 2 * ((max_task_count + cores_per_node - 1) / cores_per_node);
     double p_app = parallelism;
     //flux_log ((flux_t *)h, 0, "p_app=%f", p_app);
-    double p_min = cluster_size * (1 - k) * std::pow ((p_app / cluster_size), delta);
+    double p_min = cluster_size * (1 - m_options.k) * std::pow ((p_app / cluster_size), m_options.delta);
     //flux_log ((flux_t *)h, 0, "p_min=%f", p_min);
-    double p_max = std::min(gamma * p_app * (1 - beta * load), (double)cluster_size);
+    double p_max = std::min(m_options.gamma * p_app * (1 - m_options.beta * load), (double)cluster_size);
     //flux_log ((flux_t *)h, 0, "p_max=%f", p_max);
-    double p_eff = p_min + (p_max - p_min) * (1 + std::tanh(b * (load_breakpoint - load))) / 2;
+    double p_eff = p_min + (p_max - p_min) * (1 + std::tanh(m_options.b * (m_options.load_breakpoint - load))) / 2;
     //flux_log ((flux_t *)h, 0, "p_eff=%f", p_eff);
     double scale = 1;
     if (scale * p_eff < 0) 

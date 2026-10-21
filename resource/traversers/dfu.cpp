@@ -247,16 +247,20 @@ out:
 // DFU Traverser Public API Definitions
 ////////////////////////////////////////////////////////////////////////////////
 
-dfu_traverser_t::dfu_traverser_t (std::string policy)
+dfu_traverser_t::dfu_traverser_t (
+    std::string policy,
+    const argilos_options_t &argilos_options)
 {
-    traverser = detail::create_traverser (policy);
+    traverser = detail::create_traverser (policy, argilos_options);
 }
 
-dfu_traverser_t::dfu_traverser_t (std::shared_ptr<resource_graph_db_t> db,
-                                  std::shared_ptr<dfu_match_cb_t> m,
-                                  const std::string policy)
+dfu_traverser_t::dfu_traverser_t (
+    std::shared_ptr<resource_graph_db_t> db,
+    std::shared_ptr<dfu_match_cb_t> m,
+    const std::string policy,
+    const argilos_options_t &argilos_options)
 {
-    traverser = detail::create_traverser (db, m, policy);
+    traverser = detail::create_traverser (db, m, policy, argilos_options);
 }
 
 dfu_traverser_t::dfu_traverser_t (const dfu_traverser_t &o) = default;

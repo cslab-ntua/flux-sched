@@ -90,6 +90,7 @@ struct resource_ctx_t : public resource_interface_t {
     flux_msg_handler_t **handlers; /* Message handlers */
     Flux::opts_manager::optmgr_composer_t<Flux::opts_manager::resource_opts_t>
         opts;                                             /* Option manager */
+    argilos_options_t argilos_options;
     std::shared_ptr<dfu_match_cb_t> matcher;              /* Match callback object */
     std::shared_ptr<dfu_traverser_t> traverser;           /* Graph traverser object */
     std::shared_ptr<resource_graph_db_t> db;              /* Resource graph data store */

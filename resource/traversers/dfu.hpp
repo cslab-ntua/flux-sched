@@ -26,10 +26,14 @@ namespace resource_model {
  */
 class dfu_traverser_t {
    public:
-    dfu_traverser_t (const std::string policy = "simple");
-    dfu_traverser_t (std::shared_ptr<resource_graph_db_t> db,
-                     std::shared_ptr<dfu_match_cb_t> m,
-                     const std::string policy = "simple");
+    dfu_traverser_t (
+        const std::string policy = "simple",
+        const argilos_options_t &argilos_options = argilos_options_t {});
+    dfu_traverser_t (
+        std::shared_ptr<resource_graph_db_t> db,
+        std::shared_ptr<dfu_match_cb_t> m,
+        const std::string policy = "simple",
+        const argilos_options_t &argilos_options = argilos_options_t {});
     dfu_traverser_t (const dfu_traverser_t &o);
     dfu_traverser_t (dfu_traverser_t &&o) = default;
     dfu_traverser_t &operator= (const dfu_traverser_t &o);

@@ -36,7 +36,9 @@ bool known_traverser_policy (const std::string &policy);
  *  \param policy The traverser policy to use (e.g., FLEXIBLE, SIMPLE).
  *  \return A shared pointer to the created traverser, or nullptr on failure.
  */
-std::shared_ptr<dfu_impl_t> create_traverser (const std::string &policy = "simple");
+std::shared_ptr<dfu_impl_t> create_traverser (
+    const std::string &policy = "simple",
+    const argilos_options_t &argilos_options = argilos_options_t {});
 
 /*! Factory method for creating a traverser object
  *  based on the specified policy, resource graph database,
@@ -49,9 +51,11 @@ std::shared_ptr<dfu_impl_t> create_traverser (const std::string &policy = "simpl
  *  \param policy The traverser policy to use (e.g., FLEXIBLE, SIMPLE).
  *  \return A shared pointer to the created traverser, or nullptr on failure.
  */
-std::shared_ptr<dfu_impl_t> create_traverser (std::shared_ptr<resource_graph_db_t> db,
-                                              std::shared_ptr<dfu_match_cb_t> m,
-                                              const std::string &policy = "simple");
+std::shared_ptr<dfu_impl_t> create_traverser (
+    std::shared_ptr<resource_graph_db_t> db,
+    std::shared_ptr<dfu_match_cb_t> m,
+    const std::string &policy = "simple",
+    const argilos_options_t &argilos_options = argilos_options_t {});
 
 }  // namespace detail
 }  // namespace resource_model

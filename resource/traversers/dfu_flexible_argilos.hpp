@@ -17,6 +17,15 @@ using namespace Flux::resource_model::detail;
 namespace Flux {
 namespace resource_model {
 
+struct argilos_options_t {
+    double b = 8.0;
+    double beta = 0.7;
+    double k = 0.8;
+    double load_breakpoint = 0.8;
+    double delta = 0.9;
+    double gamma = 2.0;
+};
+
 class dfu_flexible_argilos_t : public dfu_flexible_t {
     // struct to convert map of resources counts to an index
    public:
@@ -49,8 +58,12 @@ class dfu_flexible_argilos_t : public dfu_flexible_t {
         const std::vector<Jobspec::Resource> &resources) const;
 
    public:
-    dfu_flexible_argilos_t ();
-    dfu_flexible_argilos_t (std::shared_ptr<resource_graph_db_t> db, std::shared_ptr<dfu_match_cb_t> m);
+    explicit dfu_flexible_argilos_t (
+        const argilos_options_t &options = argilos_options_t {});
+    dfu_flexible_argilos_t (
+        std::shared_ptr<resource_graph_db_t> db, 
+        std::shared_ptr<dfu_match_cb_t> m,
+        const argilos_options_t &options = argilos_options_t {});
     dfu_flexible_argilos_t (const dfu_flexible_argilos_t &o);
     dfu_flexible_argilos_t (dfu_flexible_argilos_t &&o);
     dfu_flexible_argilos_t &operator= (const dfu_flexible_argilos_t &o);
@@ -58,12 +71,7 @@ class dfu_flexible_argilos_t : public dfu_flexible_t {
     ~dfu_flexible_argilos_t ();
 
    private:
-    double b = 0.8;
-    double beta = 0.7;
-    double k = 0.8;
-    double load_breakpoint = 0.8;
-    double delta = 0.9;
-    double gamma = 2.0;
+    argilos_options_t m_options;
 };
 
 }  // namespace resource_model
