@@ -18,6 +18,7 @@ extern "C" {
 
 #include "resource/traversers/dfu_flexible_argilos.hpp"
 #include "resource/config/system_defaults.hpp"
+#include <iostream>
 
 using namespace Flux::Jobspec;
 using namespace Flux::resource_model;
@@ -111,7 +112,7 @@ int dfu_flexible_argilos_t::effective_task_count (double parallelism,
                                                   int cores_per_node)
 {
     //flux_log ((flux_t *)h, 0, "max_task_count= %d, cores_per_node= %d\n", max_task_count, cores_per_node);
-    int cluster_size = 2 * ((max_task_count + cores_per_node - 1) / cores_per_node);
+    int cluster_size = 2 * (max_task_count / cores_per_node);
     double p_app = parallelism;
     //flux_log ((flux_t *)h, 0, "p_app=%f", p_app);
     double p_min = cluster_size * (1 - m_options.k) * std::pow ((p_app / cluster_size), m_options.delta);
@@ -121,6 +122,17 @@ int dfu_flexible_argilos_t::effective_task_count (double parallelism,
     double p_eff = p_min + (p_max - p_min) * (1 + std::tanh(m_options.b * (m_options.load_breakpoint - load))) / 2;
     //flux_log ((flux_t *)h, 0, "p_eff=%f", p_eff);
     double scale = 1;
+
+    // std::cerr << "[argilos] parallelism=" << parallelism
+    //       << " load=" << load
+    //       << " max_task_count=" << max_task_count
+    //       << " cores_per_node=" << cores_per_node
+    //       << " cluster_size=" << cluster_size
+    //       << " p_min=" << p_min
+    //       << " p_max=" << p_max
+    //       << " p_eff=" << p_eff
+    //       << std::endl;
+
     if (scale * p_eff < 0) 
         return 0;
     else if (scale * p_eff > cluster_size)
@@ -128,19 +140,28 @@ int dfu_flexible_argilos_t::effective_task_count (double parallelism,
     return std::round(scale * p_eff) * cores_per_node; 
 }
 
+/*
+{"version": 1, "execution": 
+{"R_lite": [{"rank": "9-10", "children": {"core": "0-127"}}], 
+"nodelist": ["jsfc[116-117]"], "starttime": 1795277112, "expiration": 1795277922, 
+"nslots": 256}}
+*/
 static int extract_counts_from_R (json_t *R, int *nodes, int *cores)
 {
     *nodes = 0;
     *cores = 0;
-    
-    if (!R) {
-        return -1;
-    }
+
+    // rv1_nosched can leave R null when no resources matched.
+    if (!R)
+        return 0;
 
     json_t *execution = json_object_get (R, "execution");
-    json_t *rlite = execution ? json_object_get (execution, "R_lite") : NULL;
+    json_t *rlite = execution
+        ? json_object_get (execution, "R_lite")
+        : nullptr;
 
     if (!json_is_array (rlite)) {
+        errno = EINVAL;
         return -1;
     }
 
@@ -148,25 +169,44 @@ static int extract_counts_from_R (json_t *R, int *nodes, int *cores)
     json_t *entry;
 
     json_array_foreach (rlite, i, entry) {
-        const char *rank = NULL;
-        json_t *children = NULL;
+        const char *rank_str =
+            json_string_value (json_object_get (entry, "rank"));
 
-        if (json_unpack (entry, "{s?s s?o}",
-                         "rank", &rank,
-                         "children", &children) < 0)
-            continue;
-
-        if (rank)
-            (*nodes)++;
-
-        json_t *core = children ? json_object_get (children, "core") : NULL;
-        if (json_is_string (core)) {
-            struct idset *ids = idset_decode (json_string_value (core));
-            if (ids) {
-                *cores += idset_count (ids);
-                idset_destroy (ids);
-            }
+        if (!rank_str) {
+            errno = EINVAL;
+            return -1;
         }
+
+        struct idset *ranks = idset_decode (rank_str);
+        if (!ranks)
+            return -1;
+
+        const int rank_count = idset_count (ranks);
+        idset_destroy (ranks);
+
+        json_t *children = json_object_get (entry, "children");
+        json_t *core = children
+            ? json_object_get (children, "core")
+            : nullptr;
+
+        int cores_per_rank = 0;
+        if (core) {
+            const char *core_str = json_string_value (core);
+            if (!core_str) {
+                errno = EINVAL;
+                return -1;
+            }
+
+            struct idset *ids = idset_decode (core_str);
+            if (!ids)
+                return -1;
+
+            cores_per_rank = idset_count (ids);
+            idset_destroy (ids);
+        }
+
+        *nodes += rank_count;
+        *cores += rank_count * cores_per_rank;
     }
 
     return 0;
@@ -196,7 +236,10 @@ std::tuple<int, int, int> dfu_flexible_argilos_t::get_status ()
     if (alloc_w->emit_json (&alloc) < 0)
         return {0, 0, 0};
 
-    extract_counts_from_R (alloc, &alloc_nodes, &alloc_cores);
+    if (extract_counts_from_R (alloc, &alloc_nodes, &alloc_cores) < 0) {
+        json_decref (alloc);
+        return {0, 0, 0};
+    }
 
     auto all_w = match_writers_factory_t::create (format);
     if (!all_w) {
@@ -257,7 +300,9 @@ int dfu_flexible_argilos_t::select (std::vector<Jobspec::Resource> &resources,
     auto variants = extract_variant_indices (xor_resources);
 
     size_t m;
+    
     double load = 0;
+    
     long long max_task_count;
     std::vector<long long> v;
     for (auto xor_resource : xor_resources) {
@@ -277,7 +322,17 @@ int dfu_flexible_argilos_t::select (std::vector<Jobspec::Resource> &resources,
     }
     
     auto [all_nodes, used_nodes, cores_per_node] = get_status ();
+    
+    // std::cerr << "[load calculation] load=" << load
+    //     << " used_nodes=" << used_nodes
+    //     << " cores_per_node=" << cores_per_node
+    //     << " all_nodes=" << all_nodes
+    //     << '\n';
+
     load = (used_nodes * cores_per_node + load) / (all_nodes * cores_per_node);
+    if (load > 1.0) load = 1.0;
+    if (load < 0.0) load = 0.0;
+    
     int best_p = effective_task_count (meta.parallelism, load, *std::max_element(v.begin(), v.end()), cores_per_node);
 
     std::sort (
