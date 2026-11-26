@@ -123,15 +123,15 @@ int dfu_flexible_argilos_t::effective_task_count (double parallelism,
     //flux_log ((flux_t *)h, 0, "p_eff=%f", p_eff);
     double scale = 1;
 
-    // std::cerr << "[argilos] parallelism=" << parallelism
-    //       << " load=" << load
-    //       << " max_task_count=" << max_task_count
-    //       << " cores_per_node=" << cores_per_node
-    //       << " cluster_size=" << cluster_size
-    //       << " p_min=" << p_min
-    //       << " p_max=" << p_max
-    //       << " p_eff=" << p_eff
-    //       << std::endl;
+    std::cerr << "[argilos] parallelism=" << parallelism
+          << " load=" << load
+          << " max_task_count=" << max_task_count
+          << " cores_per_node=" << cores_per_node
+          << " cluster_size=" << cluster_size
+          << " p_min=" << p_min
+          << " p_max=" << p_max
+          << " p_eff=" << p_eff
+          << std::endl;
 
     if (scale * p_eff < 0) 
         return 0;
@@ -230,7 +230,7 @@ std::tuple<int, int, int> dfu_flexible_argilos_t::get_status ()
     if (!alloc_w)
         return {0, 0, 0};
 
-    if (dfu_impl_t::find (alloc_w, "sched-now=allocated") < 0)
+    if (dfu_impl_t::find (alloc_w, "status=up and sched-now=allocated") < 0)
         return {0, 0, 0};
 
     if (alloc_w->emit_json (&alloc) < 0)
@@ -247,7 +247,7 @@ std::tuple<int, int, int> dfu_flexible_argilos_t::get_status ()
         return {0, 0, 0};
     }
 
-    if (dfu_impl_t::find (all_w, "status=up or status=down") < 0) {
+    if (dfu_impl_t::find (all_w, "status=up") < 0) {
         json_decref (alloc);
         return {0, 0, 0};
     }
@@ -323,11 +323,11 @@ int dfu_flexible_argilos_t::select (std::vector<Jobspec::Resource> &resources,
     
     auto [all_nodes, used_nodes, cores_per_node] = get_status ();
     
-    // std::cerr << "[load calculation] load=" << load
-    //     << " used_nodes=" << used_nodes
-    //     << " cores_per_node=" << cores_per_node
-    //     << " all_nodes=" << all_nodes
-    //     << '\n';
+    std::cerr << "[load calculation] load=" << load
+        << " used_nodes=" << used_nodes
+        << " cores_per_node=" << cores_per_node
+        << " all_nodes=" << all_nodes
+        << '\n';
 
     load = (used_nodes * cores_per_node + load) / (all_nodes * cores_per_node);
     if (load > 1.0) load = 1.0;
